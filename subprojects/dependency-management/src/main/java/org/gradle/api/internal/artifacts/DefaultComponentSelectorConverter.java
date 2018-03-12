@@ -25,6 +25,7 @@ import org.gradle.api.artifacts.component.ProjectComponentSelector;
 import org.gradle.api.internal.artifacts.component.ComponentIdentifierFactory;
 import org.gradle.api.internal.artifacts.ivyservice.projectmodule.LocalComponentRegistry;
 import org.gradle.internal.component.local.model.LocalComponentMetadata;
+import org.gradle.util.GUtil;
 
 public class DefaultComponentSelectorConverter implements ComponentSelectorConverter {
     private static final ModuleVersionSelector UNKNOWN_MODULE_VERSION_SELECTOR = DefaultModuleVersionSelector.newSelector("", "unknown", "");
@@ -63,7 +64,8 @@ public class DefaultComponentSelectorConverter implements ComponentSelectorConve
         }
         if (selector instanceof LibraryComponentSelector) {
             LibraryComponentSelector libraryComponentSelector = (LibraryComponentSelector) selector;
-            return DefaultModuleVersionSelector.newSelector(libraryComponentSelector.getProjectPath(), libraryComponentSelector.getLibraryName(), "undefined");
+            String libraryName = GUtil.elvis(libraryComponentSelector.getLibraryName(), "");
+            return DefaultModuleVersionSelector.newSelector(libraryComponentSelector.getProjectPath(), libraryName, "undefined");
         }
         return UNKNOWN_MODULE_VERSION_SELECTOR;
     }
