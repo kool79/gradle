@@ -79,8 +79,13 @@ public class DefaultLoggingManager implements LoggingManagerInternal, Closeable 
         return this;
     }
 
-    public DefaultLoggingManager stop() {
+    @Override
+    public void flush() {
         loggingRouter.flush();
+    }
+
+    public DefaultLoggingManager stop() {
+        flush();
         try {
             CompositeStoppable.stoppable(slf4jLoggingSystem, javaUtilLoggingSystem, stdOutLoggingSystem, stdErrLoggingSystem).stop();
             for (StandardOutputListener stdoutListener : stdoutListeners) {

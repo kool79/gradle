@@ -220,7 +220,9 @@ class DaemonLifecycleSpec extends DaemonIntegrationSpec {
     }
 
     void doDaemonContext(gradleHandle, Closure assertions) {
-        DaemonContextParser.parseFromString(gradleHandle.standardOutput).with(assertions)
+        poll(5) {
+            DaemonContextParser.parseFromString(gradleHandle.standardOutput).with(assertions)
+        }
     }
 
     def "daemons do some work - sit idle - then timeout and die"() {

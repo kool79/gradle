@@ -19,6 +19,7 @@ package org.gradle.launcher.daemon
 import org.gradle.integtests.fixtures.KillProcessAvailability
 import org.gradle.integtests.fixtures.daemon.DaemonIntegrationSpec
 import org.gradle.launcher.daemon.logging.DaemonMessages
+import org.gradle.test.fixtures.ConcurrentTestUtil
 import org.junit.Rule
 import org.junit.rules.ExternalResource
 import spock.lang.IgnoreIf
@@ -167,7 +168,9 @@ class DaemonInitialCommunicationFailureIntegrationSpec extends DaemonIntegration
 
         // Daemon is still running
         daemon.becomesIdle()
-        daemon.log.contains("Unable to receive command from client")
+        ConcurrentTestUtil.poll(5) {
+            daemon.log.contains("Unable to receive command from client")
+        }
 
         when:
         // Ensure daemon is functional

@@ -18,6 +18,7 @@ package org.gradle.launcher.daemon
 
 import org.gradle.integtests.fixtures.daemon.DaemonIntegrationSpec
 import org.gradle.launcher.daemon.logging.DaemonMessages
+import org.gradle.test.fixtures.ConcurrentTestUtil
 
 class DaemonAuthenticationIntegrationSpec extends DaemonIntegrationSpec {
     def "daemon discards build request that does not contain correct authentication token"() {
@@ -35,7 +36,9 @@ class DaemonAuthenticationIntegrationSpec extends DaemonIntegrationSpec {
 
         then:
         failure.assertHasDescription("Unexpected authentication token in command")
-        daemon.log.contains("Unexpected authentication token in command")
+        ConcurrentTestUtil.poll(5) {
+            daemon.log.contains("Unexpected authentication token in command")
+        }
 
         and:
         // daemon is still running
@@ -54,7 +57,9 @@ class DaemonAuthenticationIntegrationSpec extends DaemonIntegrationSpec {
 
         then:
         output.contains DaemonMessages.UNABLE_TO_STOP_DAEMON
-        daemon.log.contains("Unexpected authentication token in command")
+        ConcurrentTestUtil.poll(5) {
+            daemon.log.contains("Unexpected authentication token in command")
+        }
 
         and:
         // daemon is still running

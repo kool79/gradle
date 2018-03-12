@@ -71,4 +71,10 @@ public interface LoggingOutputInternal extends LoggingOutput {
      */
     @UsedByScanPlugin
     void removeOutputEventListener(OutputEventListener listener);
+
+    /**
+     * Flush any outstanding messages to any listeners.  This should ensure that any parts of the logging chain that queue up messages
+     * will drain their queues.
+     */
+    void flush();
 }
