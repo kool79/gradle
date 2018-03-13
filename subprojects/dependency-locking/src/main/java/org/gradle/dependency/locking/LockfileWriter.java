@@ -16,8 +16,10 @@
 
 package org.gradle.dependency.locking;
 
+import org.gradle.api.artifacts.component.ModuleComponentIdentifier;
+
 import java.util.Map;
 
 interface LockfileWriter {
-    void writeLockFile(String configurationName, Map<String, String> resolvedModules);
+    void writeLockFile(String configurationName, Map<String, ModuleComponentIdentifier> resolvedModules);
 }

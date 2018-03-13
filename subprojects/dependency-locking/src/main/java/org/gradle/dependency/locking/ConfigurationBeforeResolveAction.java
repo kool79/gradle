@@ -53,12 +53,14 @@ class ConfigurationBeforeResolveAction implements Action<ResolvableDependencies>
     }
 
     private void addPreferConstraints(String configuration, List<String> lines) {
-        for (String line : lines) {
-            if (mustConstrainModule(line)) {
-                DependencyConstraint dependencyConstraint = dependencyFactory.createDependencyConstraint(line);
-                dependencyConstraint.because("dependency-locking in place");
-                LOGGER.warn("Adding dependency constraint '{}:{}:{}' to configuration '{}'", dependencyConstraint.getGroup(), dependencyConstraint.getName(), dependencyConstraint.getVersion(), configuration);
-                constraintsHandler.add(configuration, dependencyConstraint);
+        if (lines != null) {
+            for (String line : lines) {
+                if (mustConstrainModule(line)) {
+                    DependencyConstraint dependencyConstraint = dependencyFactory.createDependencyConstraint(line);
+                    dependencyConstraint.because("dependency-locking in place");
+                    LOGGER.warn("Adding dependency constraint '{}:{}:{}' to configuration '{}'", dependencyConstraint.getGroup(), dependencyConstraint.getName(), dependencyConstraint.getVersion(), configuration);
+                    constraintsHandler.add(configuration, dependencyConstraint);
+                }
             }
         }
     }

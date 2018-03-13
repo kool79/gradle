@@ -16,6 +16,8 @@
 
 package org.gradle.dependency.locking;
 
+import org.gradle.api.artifacts.component.ModuleComponentIdentifier;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -32,7 +34,7 @@ class DependencyLockingDataExchanger {
 
     private final AtomicReference<LockfileHandling> lockfileHandling = new AtomicReference<LockfileHandling>(LockfileHandling.VALIDATE);
     private final AtomicReference<List<String>> upgradeModules = new AtomicReference<List<String>>(Collections.<String>emptyList());
-    private final Map<String, Map<String, String>> resolvedConfigurations = new ConcurrentHashMap<String, Map<String, String>>();
+    private final Map<String, Map<String, ModuleComponentIdentifier>> resolvedConfigurations = new ConcurrentHashMap<String, Map<String, ModuleComponentIdentifier>>();
     private LockfileWriter lockfileWriter;
 
     public boolean updateLockFileHandling(LockfileHandling updated) {
@@ -44,7 +46,7 @@ class DependencyLockingDataExchanger {
     }
 
     private synchronized void writePreviouslyResolvedConfigurations() {
-        for (Map.Entry<String, Map<String, String>> resolvedConfiguration : resolvedConfigurations.entrySet()) {
+        for (Map.Entry<String, Map<String, ModuleComponentIdentifier>> resolvedConfiguration : resolvedConfigurations.entrySet()) {
             lockfileWriter.writeLockFile(resolvedConfiguration.getKey(), resolvedConfiguration.getValue());
         }
     }
@@ -61,8 +63,8 @@ class DependencyLockingDataExchanger {
         return upgradeModules.get();
     }
 
-    public void configurationResolved(String configurationName, Map<String, String> modules) {
-        if (lockfileHandling.get() != LockfileHandling.VALIDATE) {
+    public void configurationResolved(String configurationName, Map<String, ModuleComponentIdentifier> modules, ConfigurationAfterResolveAction.LockValidationState validationResult) {
+        if (lockfileHandling.get() != LockfileHandling.VALIDATE || validationResult == ConfigurationAfterResolveAction.LockValidationState.VALID_APPENDED) {
             lockfileWriter.writeLockFile(configurationName, modules);
         } else {
             resolvedConfigurations.put(configurationName, modules);
@@ -75,4 +77,10 @@ class DependencyLockingDataExchanger {
     public void setLockfileWriter(LockfileWriter lockfileWriter) {
         this.lockfileWriter = lockfileWriter;
     }
+
+    public boolean isStrict() {
+        // This is currently not a configuration option
+        return true;
+    }
+
 }
