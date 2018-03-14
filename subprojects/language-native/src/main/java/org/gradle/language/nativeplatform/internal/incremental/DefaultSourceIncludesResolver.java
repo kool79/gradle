@@ -257,7 +257,20 @@ public class DefaultSourceIncludesResolver implements SourceIncludesResolver {
         return quotedSearchPath;
     }
 
-    private void searchForDependency(List<File> searchPath, String include, BuildableResult dependencies) {
+    public File quotedSearchIncludeRoots(String include, File sourceFile) {
+        List<File> quotedSearchPath = prependSourceDir(sourceFile, includePaths);
+        BuildableResult result = new BuildableResult();
+        searchForDependency(quotedSearchPath, include, result, true);
+        return result.files.isEmpty() ? null : result.files.iterator().next().getFile();
+    }
+
+    public File systemSearchIncludeRoots(String include) {
+        BuildableResult result = new BuildableResult();
+        searchForDependency(includePaths, include, result, false);
+        return result.files.isEmpty() ? null : result.files.iterator().next().getFile();
+    }
+
+    private void searchForDependency(List<File> searchPath, String include, BuildableResult dependencies, boolean quoted) {
         for (File searchDir : searchPath) {
             Map<String, IncludeFileImpl> searchedIncludes = includeRoots.get(searchDir);
             if (searchedIncludes == null) {
@@ -275,7 +288,7 @@ public class DefaultSourceIncludesResolver implements SourceIncludesResolver {
 
             File candidate = new File(searchDir, include);
             FileSnapshot fileSnapshot = fileSystemSnapshotter.snapshotSelf(candidate);
-            IncludeFileImpl includeFile = fileSnapshot.getType() == FileType.RegularFile ? new IncludeFileImpl(candidate, fileSnapshot) : new IncludeFileImpl(null, fileSnapshot);
+            IncludeFileImpl includeFile = fileSnapshot.getType() == FileType.RegularFile ? new IncludeFileImpl(candidate, fileSnapshot, include, quoted) : new IncludeFileImpl(null, fileSnapshot, include, quoted);
             searchedIncludes.put(include, includeFile);
 
             if (fileSnapshot.getType() == FileType.RegularFile) {
@@ -288,10 +301,14 @@ public class DefaultSourceIncludesResolver implements SourceIncludesResolver {
     private static class IncludeFileImpl implements IncludeFile {
         final File file;
         final FileSnapshot snapshot;
+        private final String include;
+        private final boolean quotedInclude;
 
-        IncludeFileImpl(File file, FileSnapshot snapshot) {
+        IncludeFileImpl(File file, FileSnapshot snapshot, String include, boolean quotedInclude) {
             this.file = file;
             this.snapshot = snapshot;
+            this.include = include;
+            this.quotedInclude = quotedInclude;
         }
 
         @Override
@@ -302,6 +319,16 @@ public class DefaultSourceIncludesResolver implements SourceIncludesResolver {
         @Override
         public FileSnapshot getSnapshot() {
             return snapshot;
+        }
+
+        @Override
+        public String getInclude() {
+            return include;
+        }
+
+        @Override
+        public boolean isQuotedInclude() {
+            return quotedInclude;
         }
 
         @Override
@@ -445,7 +472,7 @@ public class DefaultSourceIncludesResolver implements SourceIncludesResolver {
                 return;
             }
             List<File> quotedSearchPath = prependSourceDir(sourceFile, includePaths);
-            searchForDependency(quotedSearchPath, path, results);
+            searchForDependency(quotedSearchPath, path, results, true);
         }
 
         @Override
@@ -454,7 +481,7 @@ public class DefaultSourceIncludesResolver implements SourceIncludesResolver {
             if (!system.add(path)) {
                 return;
             }
-            searchForDependency(includePaths, path, results);
+            searchForDependency(includePaths, path, results, false);
         }
 
         @Override

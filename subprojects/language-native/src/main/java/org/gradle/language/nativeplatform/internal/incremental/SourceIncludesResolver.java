@@ -36,10 +36,15 @@ public interface SourceIncludesResolver {
     interface IncludeFile {
         File getFile();
         FileSnapshot getSnapshot();
+        String getInclude();
+        boolean isQuotedInclude();
     }
 
     /**
      * Resolves the given include directive to zero or more include files.
      */
     IncludeResolutionResult resolveInclude(File sourceFile, Include include, MacroLookup visibleMacros);
+
+    File quotedSearchIncludeRoots(String include, File sourceFile);
+    File systemSearchIncludeRoots(String include);
 }
