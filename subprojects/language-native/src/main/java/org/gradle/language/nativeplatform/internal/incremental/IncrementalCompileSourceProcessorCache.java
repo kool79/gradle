@@ -16,25 +16,26 @@
 
 package org.gradle.language.nativeplatform.internal.incremental;
 
-import com.google.common.collect.Multimap;
+import com.google.common.collect.ListMultimap;
 import com.google.common.collect.MultimapBuilder;
+import com.google.common.collect.Multimaps;
 
 import java.io.File;
 import java.util.Collection;
 
 public class IncrementalCompileSourceProcessorCache {
-    private final Multimap<File, IncrementalCompileFilesFactory.FileDetails> cache = MultimapBuilder.ListMultimapBuilder.hashKeys().arrayListValues().build();
-    private final Object lock = new Object();
+    private final ListMultimap<File, IncrementalCompileFilesFactory.FileDetails> cache;
+
+    public IncrementalCompileSourceProcessorCache() {
+        ListMultimap<File, IncrementalCompileFilesFactory.FileDetails> c = MultimapBuilder.ListMultimapBuilder.hashKeys().arrayListValues().build();
+        cache = Multimaps.synchronizedListMultimap(c);
+    }
 
     public Collection<IncrementalCompileFilesFactory.FileDetails> get(File file) {
-        synchronized (lock) {
-            return cache.get(file);
-        }
+        return cache.get(file);
     }
 
     public void put(File file, IncrementalCompileFilesFactory.FileDetails fileDetails) {
-        synchronized (lock) {
-            cache.put(file, fileDetails);
-        }
+        cache.put(file, fileDetails);
     }
 }
