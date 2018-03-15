@@ -27,8 +27,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import static java.util.Collections.emptyList;
-
 class LockFileReaderWriter implements LockfileReader, LockfileWriter {
 
     static final String FILE_SUFFIX = ".lockfile";

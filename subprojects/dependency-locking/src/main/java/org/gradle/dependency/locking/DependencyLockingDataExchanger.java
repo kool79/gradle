@@ -37,12 +37,10 @@ class DependencyLockingDataExchanger {
     private final Map<String, Map<String, ModuleComponentIdentifier>> resolvedConfigurations = new ConcurrentHashMap<String, Map<String, ModuleComponentIdentifier>>();
     private LockfileWriter lockfileWriter;
 
-    public boolean updateLockFileHandling(LockfileHandling updated) {
+    public void updateLockFileHandling(LockfileHandling updated) {
         if (lockfileHandling.compareAndSet(LockfileHandling.VALIDATE, updated)) {
             writePreviouslyResolvedConfigurations();
-            return true;
         }
-        return false;
     }
 
     private synchronized void writePreviouslyResolvedConfigurations() {
