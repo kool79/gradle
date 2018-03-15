@@ -119,7 +119,7 @@ public class IncrementalCompileFilesFactory {
             if (fileDetails == null) {
                 Collection<FileDetails> fileDetailsCollection = sourceProcessorCache.get(file);
                 for (FileDetails details : fileDetailsCollection) {
-                    if (details.results.bob(new CompareResolution() {
+                    if (details.results.resolveWith(new ResolutionContext() {
                         Set<File> visited = new HashSet<File>();
 
                         @Override
@@ -242,7 +242,7 @@ public class IncrementalCompileFilesFactory {
         }
     }
 
-    interface CompareResolution {
+    interface ResolutionContext {
 
         boolean hasVisited(File file);
 
@@ -281,15 +281,15 @@ public class IncrementalCompileFilesFactory {
             includeFiles = Collections.emptyList();
         }
 
-        boolean bob(CompareResolution compareResolution) {
-            if (!compareResolution.hasVisited(file)) {
+        boolean resolveWith(ResolutionContext resolutionContext) {
+            if (!resolutionContext.hasVisited(file)) {
                 for (SourceIncludesResolver.IncludeResolutionResult incFile : includeFiles) {
-                    if (!compareResolution.checkResolution(file, incFile)) {
+                    if (!resolutionContext.checkResolution(file, incFile)) {
                         return false;
                     }
                 }
                 for (FileVisitResult result : included) {
-                    if (!result.bob(compareResolution)) {
+                    if (!result.resolveWith(resolutionContext)) {
                         return false;
                     }
                 }
