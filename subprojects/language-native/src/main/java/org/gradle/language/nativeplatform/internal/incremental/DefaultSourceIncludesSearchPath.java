@@ -21,6 +21,7 @@ import org.gradle.api.internal.changedetection.state.FileSnapshot;
 import org.gradle.api.internal.changedetection.state.FileSystemSnapshotter;
 import org.gradle.internal.file.FileType;
 
+import javax.annotation.Nullable;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -48,8 +49,8 @@ public class DefaultSourceIncludesSearchPath implements SourceIncludesSearchPath
             }
 
             @Override
-            public void searchForDependency(String include, SearchResult dependencies) {
-                DefaultSourceIncludesSearchPath.this.searchForDependency(includePaths, include, dependencies, true);
+            public IncludeFile searchForDependency(String include) {
+                return DefaultSourceIncludesSearchPath.this.searchForDependency(includePaths, include, IncludeFile.IncludedType.QUOTED);
             }
         };
     }
@@ -67,11 +68,13 @@ public class DefaultSourceIncludesSearchPath implements SourceIncludesSearchPath
     }
 
     @Override
-    public void searchForDependency(String include, SearchResult dependencies) {
-        searchForDependency(includePaths, include, dependencies, false);
+    @Nullable
+    public IncludeFile searchForDependency(String include) {
+        return searchForDependency(includePaths, include, IncludeFile.IncludedType.SYSTEM);
     }
 
-    private void searchForDependency(List<File> searchPath, String include, SearchResult dependencies, boolean quoted) {
+    @Nullable
+    private IncludeFile searchForDependency(List<File> searchPath, String include, IncludeFile.IncludedType includedType) {
         for (File searchDir : searchPath) {
             Map<String, IncludeFileImpl> searchedIncludes = includeRoots.get(searchDir);
             if (searchedIncludes == null) {
@@ -81,35 +84,35 @@ public class DefaultSourceIncludesSearchPath implements SourceIncludesSearchPath
             if (searchedIncludes.containsKey(include)) {
                 IncludeFileImpl includeFile = searchedIncludes.get(include);
                 if (includeFile.snapshot.getType() == FileType.RegularFile) {
-                    dependencies.resolved(includeFile);
-                    return;
+                    return includeFile;
                 }
                 continue;
             }
 
             File candidate = new File(searchDir, include);
             FileSnapshot fileSnapshot = fileSystemSnapshotter.snapshotSelf(candidate);
-            IncludeFileImpl includeFile = fileSnapshot.getType() == FileType.RegularFile ? new IncludeFileImpl(candidate, fileSnapshot, include, quoted) : new IncludeFileImpl(null, fileSnapshot, include, quoted);
+            IncludeFileImpl includeFile = fileSnapshot.getType() == FileType.RegularFile ? new IncludeFileImpl(candidate, fileSnapshot, include, includedType) : new IncludeFileImpl(null, fileSnapshot, include, includedType);
             searchedIncludes.put(include, includeFile);
 
             if (fileSnapshot.getType() == FileType.RegularFile) {
-                dependencies.resolved(includeFile);
-                return;
+                return includeFile;
             }
         }
+
+        return null;
     }
 
-    private static class IncludeFileImpl implements SourceIncludesResolver.IncludeFile {
+    private static class IncludeFileImpl implements IncludeFile {
         final File file;
         final FileSnapshot snapshot;
         private final String include;
-        private final boolean quotedInclude;
+        private final IncludedType includedType;
 
-        IncludeFileImpl(File file, FileSnapshot snapshot, String include, boolean quotedInclude) {
+        IncludeFileImpl(File file, FileSnapshot snapshot, String include, IncludedType includedType) {
             this.file = file;
             this.snapshot = snapshot;
             this.include = include;
-            this.quotedInclude = quotedInclude;
+            this.includedType = includedType;
         }
 
         @Override
@@ -128,8 +131,8 @@ public class DefaultSourceIncludesSearchPath implements SourceIncludesSearchPath
         }
 
         @Override
-        public boolean isQuotedInclude() {
-            return quotedInclude;
+        public IncludedType getIncludedType() {
+            return includedType;
         }
 
         @Override

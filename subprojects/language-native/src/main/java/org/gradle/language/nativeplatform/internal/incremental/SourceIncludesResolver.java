@@ -15,7 +15,6 @@
  */
 package org.gradle.language.nativeplatform.internal.incremental;
 
-import org.gradle.api.internal.changedetection.state.FileSnapshot;
 import org.gradle.language.nativeplatform.internal.Include;
 
 import java.io.File;
@@ -31,13 +30,6 @@ public interface SourceIncludesResolver {
         boolean isComplete();
 
         Collection<IncludeFile> getFiles();
-    }
-
-    interface IncludeFile {
-        File getFile();
-        FileSnapshot getSnapshot();
-        String getInclude();
-        boolean isQuotedInclude();
     }
 
     /**

@@ -115,19 +115,6 @@ public class IncrementalCompileFilesFactory {
             return previousState == null || result.result == IncludeFileResolutionResult.UnresolvedMacroIncludes || newState.hasChanged(previousState);
         }
 
-        private class SearchResultImpl implements SourceIncludesSearchPath.SearchResult {
-            SourceIncludesResolver.IncludeFile includeFile = null;
-            @Override
-            public Set<SourceIncludesResolver.IncludeFile> getFiles() {
-                return null;
-            }
-
-            @Override
-            public void resolved(SourceIncludesResolver.IncludeFile includeFile) {
-                this.includeFile = includeFile;
-            }
-        }
-
         private FileVisitResult visitFile(File file, FileSnapshot fileSnapshot, CollectingMacroLookup visibleMacros, Set<File> visited, boolean isSourceFile) {
             FileDetails fileDetails = visitedFiles.get(file);
             if (fileDetails == null) {
@@ -135,7 +122,6 @@ public class IncrementalCompileFilesFactory {
                 for (FileDetails details : fileDetailsCollection) {
                     if (details.results.resolveWith(new ResolutionContext() {
                         Set<File> visited = new HashSet<File>();
-                        SearchResultImpl result = new SearchResultImpl();
 
                         @Override
                         public boolean hasVisited(File file) {
@@ -146,14 +132,15 @@ public class IncrementalCompileFilesFactory {
                         public boolean checkResolution(File sourceFile, SourceIncludesResolver.IncludeResolutionResult incFile) {
                             SourceIncludesSearchPath quotedSearchPath = searchPath.asQuotedSearchPath(sourceFile);
 
-                            for (SourceIncludesResolver.IncludeFile includeFile : incFile.getFiles()) {
+                            for (IncludeFile includeFile : incFile.getFiles()) {
+                                IncludeFile foundFile;
                                 if (includeFile.isQuotedInclude()) {
-                                    quotedSearchPath.searchForDependency(includeFile.getInclude(), result);
+                                    foundFile = quotedSearchPath.searchForDependency(includeFile.getInclude());
                                 } else {
-                                    searchPath.searchForDependency(includeFile.getInclude(), result);
+                                    foundFile = searchPath.searchForDependency(includeFile.getInclude());
                                 }
 
-                                if (result.includeFile == null || !includeFile.getFile().equals(result.includeFile.getFile())) {
+                                if (foundFile == null || !includeFile.getFile().equals(foundFile.getFile())) {
                                     return false;
                                 }
                             }
@@ -206,7 +193,7 @@ public class IncrementalCompileFilesFactory {
                     }
                 }
                 includeFiles.add(resolutionResult);
-                for (SourceIncludesResolver.IncludeFile includeFile : resolutionResult.getFiles()) {
+                for (IncludeFile includeFile : resolutionResult.getFiles()) {
                     existingHeaders.add(includeFile.getFile());
                     FileVisitResult includeVisitResult = visitFile(includeFile.getFile(), includeFile.getSnapshot(), visibleMacros, visited, false);
                     if (includeVisitResult.result.ordinal() > result.ordinal()) {

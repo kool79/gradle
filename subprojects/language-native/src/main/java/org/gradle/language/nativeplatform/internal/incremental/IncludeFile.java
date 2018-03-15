@@ -16,12 +16,21 @@
 
 package org.gradle.language.nativeplatform.internal.incremental;
 
-import javax.annotation.Nullable;
+import org.gradle.api.internal.changedetection.state.FileSnapshot;
+
 import java.io.File;
 
-public interface SourceIncludesSearchPath {
-    SourceIncludesSearchPath asQuotedSearchPath(File sourceFile);
+public interface IncludeFile {
+    File getFile();
 
-    @Nullable
-    IncludeFile searchForDependency(String include);
+    FileSnapshot getSnapshot();
+
+    String getInclude();
+
+    IncludedType getIncludedType();
+
+    enum IncludedType {
+        SYSTEM,
+        QUOTED
+    }
 }

@@ -269,11 +269,10 @@ public class DefaultSourceIncludesResolver implements SourceIncludesResolver {
         void visitUnresolved();
     }
 
-    private static class BuildableResult implements IncludeResolutionResult, DefaultSourceIncludesSearchPath.SearchResult {
+    private static class BuildableResult implements IncludeResolutionResult {
         private final Set<IncludeFile> files = new LinkedHashSet<IncludeFile>();
         private boolean missing;
 
-        @Override
         public void resolved(IncludeFile includeFile) {
             files.add(includeFile);
         }
@@ -358,7 +357,10 @@ public class DefaultSourceIncludesResolver implements SourceIncludesResolver {
             if (!quoted.add(path)) {
                 return;
             }
-            searchPath.asQuotedSearchPath(sourceFile).searchForDependency(path, results);
+            IncludeFile includeFile = searchPath.asQuotedSearchPath(sourceFile).searchForDependency(path);
+            if (includeFile != null) {
+                results.resolved(includeFile);
+            }
         }
 
         @Override
@@ -367,7 +369,10 @@ public class DefaultSourceIncludesResolver implements SourceIncludesResolver {
             if (!system.add(path)) {
                 return;
             }
-            searchPath.searchForDependency(path, results);
+            IncludeFile includeFile = searchPath.searchForDependency(path);
+            if (includeFile != null) {
+                results.resolved(includeFile);
+            }
         }
 
         @Override
