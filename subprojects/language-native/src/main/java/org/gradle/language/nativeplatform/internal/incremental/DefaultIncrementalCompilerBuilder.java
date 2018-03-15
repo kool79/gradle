@@ -103,8 +103,9 @@ public class DefaultIncrementalCompilerBuilder implements IncrementalCompilerBui
             List<File> includeRoots = ImmutableList.copyOf(includeDirs);
             compileStateCache = compilationStateCacheFactory.create(taskPath);
             DefaultSourceIncludesParser sourceIncludesParser = new DefaultSourceIncludesParser(sourceParser, importAware.get());
-            DefaultSourceIncludesResolver dependencyParser = new DefaultSourceIncludesResolver(includeRoots, fileSystemSnapshotter);
-            IncrementalCompileFilesFactory incrementalCompileFilesFactory = new IncrementalCompileFilesFactory(sourceIncludesParser, dependencyParser, fileSystemSnapshotter, sourceProcessorCache);
+            DefaultSourceIncludesSearchPath searchPath = new DefaultSourceIncludesSearchPath(includeRoots, fileSystemSnapshotter);
+            DefaultSourceIncludesResolver dependencyParser = new DefaultSourceIncludesResolver(searchPath);
+            IncrementalCompileFilesFactory incrementalCompileFilesFactory = new IncrementalCompileFilesFactory(sourceIncludesParser, dependencyParser, fileSystemSnapshotter, sourceProcessorCache, searchPath);
             IncrementalCompileProcessor incrementalCompileProcessor = new IncrementalCompileProcessor(compileStateCache, incrementalCompileFilesFactory, buildOperationExecutor);
 
             incrementalCompilation = incrementalCompileProcessor.processSourceFiles(sourceFiles.getFiles());

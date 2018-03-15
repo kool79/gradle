@@ -49,13 +49,15 @@ public class IncrementalCompileFilesFactory {
     private final SourceIncludesResolver sourceIncludesResolver;
     private final FileSystemSnapshotter fileSystemSnapshotter;
     private final IncrementalCompileSourceProcessorCache sourceProcessorCache;
+    private final SourceIncludesSearchPath searchPath;
     private final boolean ignoreUnresolvedHeadersInDependencies;
 
-    public IncrementalCompileFilesFactory(SourceIncludesParser sourceIncludesParser, SourceIncludesResolver sourceIncludesResolver, FileSystemSnapshotter fileSystemSnapshotter, IncrementalCompileSourceProcessorCache sourceProcessorCache) {
+    public IncrementalCompileFilesFactory(SourceIncludesParser sourceIncludesParser, SourceIncludesResolver sourceIncludesResolver, FileSystemSnapshotter fileSystemSnapshotter, IncrementalCompileSourceProcessorCache sourceProcessorCache, SourceIncludesSearchPath searchPath) {
         this.sourceIncludesParser = sourceIncludesParser;
         this.sourceIncludesResolver = sourceIncludesResolver;
         this.fileSystemSnapshotter = fileSystemSnapshotter;
         this.sourceProcessorCache = sourceProcessorCache;
+        this.searchPath = searchPath;
         this.ignoreUnresolvedHeadersInDependencies = Boolean.getBoolean(IGNORE_UNRESOLVED_HEADERS_IN_DEPENDENCIES_PROPERTY_NAME);
     }
 
@@ -70,7 +72,6 @@ public class IncrementalCompileFilesFactory {
         private final Set<File> existingHeaders = Sets.newHashSet();
         private final Map<File, IncludeDirectives> includeDirectivesMap = new HashMap<File, IncludeDirectives>();
         private final Map<File, FileDetails> visitedFiles = new HashMap<File, FileDetails>();
-        int traversalCount;
         private boolean hasUnresolvedHeaders;
 
         DefaultIncementalCompileSourceProcessor(CompilationState previousCompileState) {
@@ -114,6 +115,19 @@ public class IncrementalCompileFilesFactory {
             return previousState == null || result.result == IncludeFileResolutionResult.UnresolvedMacroIncludes || newState.hasChanged(previousState);
         }
 
+        private class SearchResultImpl implements SourceIncludesSearchPath.SearchResult {
+            SourceIncludesResolver.IncludeFile includeFile = null;
+            @Override
+            public Set<SourceIncludesResolver.IncludeFile> getFiles() {
+                return null;
+            }
+
+            @Override
+            public void resolved(SourceIncludesResolver.IncludeFile includeFile) {
+                this.includeFile = includeFile;
+            }
+        }
+
         private FileVisitResult visitFile(File file, FileSnapshot fileSnapshot, CollectingMacroLookup visibleMacros, Set<File> visited, boolean isSourceFile) {
             FileDetails fileDetails = visitedFiles.get(file);
             if (fileDetails == null) {
@@ -121,6 +135,7 @@ public class IncrementalCompileFilesFactory {
                 for (FileDetails details : fileDetailsCollection) {
                     if (details.results.resolveWith(new ResolutionContext() {
                         Set<File> visited = new HashSet<File>();
+                        SearchResultImpl result = new SearchResultImpl();
 
                         @Override
                         public boolean hasVisited(File file) {
@@ -129,15 +144,17 @@ public class IncrementalCompileFilesFactory {
 
                         @Override
                         public boolean checkResolution(File sourceFile, SourceIncludesResolver.IncludeResolutionResult incFile) {
+                            SourceIncludesSearchPath quotedSearchPath = searchPath.asQuotedSearchPath(sourceFile);
+
                             for (SourceIncludesResolver.IncludeFile includeFile : incFile.getFiles()) {
                                 if (includeFile.isQuotedInclude()) {
-                                    if (!includeFile.getFile().equals(sourceIncludesResolver.quotedSearchIncludeRoots(includeFile.getInclude(), sourceFile))) {
-                                        return false;
-                                    }
+                                    quotedSearchPath.searchForDependency(includeFile.getInclude(), result);
                                 } else {
-                                    if (!includeFile.getFile().equals(sourceIncludesResolver.systemSearchIncludeRoots(includeFile.getInclude()))) {
-                                        return false;
-                                    }
+                                    searchPath.searchForDependency(includeFile.getInclude(), result);
+                                }
+
+                                if (result.includeFile == null || !includeFile.getFile().equals(result.includeFile.getFile())) {
+                                    return false;
                                 }
                             }
                             return true;

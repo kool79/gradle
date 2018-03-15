@@ -15,10 +15,6 @@
  */
 package org.gradle.language.nativeplatform.internal.incremental;
 
-import com.google.common.base.Objects;
-import org.gradle.api.internal.changedetection.state.FileSnapshot;
-import org.gradle.api.internal.changedetection.state.FileSystemSnapshotter;
-import org.gradle.internal.file.FileType;
 import org.gradle.language.nativeplatform.internal.Expression;
 import org.gradle.language.nativeplatform.internal.Include;
 import org.gradle.language.nativeplatform.internal.IncludeDirectives;
@@ -32,22 +28,16 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 public class DefaultSourceIncludesResolver implements SourceIncludesResolver {
-    private final List<File> includePaths;
-    private final FileSystemSnapshotter fileSystemSnapshotter;
-    private final Map<File, Map<String, IncludeFileImpl>> includeRoots;
+    private final SourceIncludesSearchPath searchPath;
 
-    public DefaultSourceIncludesResolver(List<File> includePaths, FileSystemSnapshotter fileSystemSnapshotter) {
-        this.includePaths = includePaths;
-        this.fileSystemSnapshotter = fileSystemSnapshotter;
-        this.includeRoots = new HashMap<File, Map<String, IncludeFileImpl>>();
+    public DefaultSourceIncludesResolver(SourceIncludesSearchPath searchPath) {
+        this.searchPath = searchPath;
     }
 
     @Override
@@ -245,110 +235,6 @@ public class DefaultSourceIncludesResolver implements SourceIncludesResolver {
         }
     }
 
-    private List<File> prependSourceDir(File sourceFile, List<File> includePaths) {
-        File sourceDir = sourceFile.getParentFile();
-        if (includePaths.size() > 1 && includePaths.get(0).equals(sourceDir)) {
-            // Source dir already at the start of the path, just use the include path
-            return includePaths;
-        }
-        List<File> quotedSearchPath = new ArrayList<File>(includePaths.size() + 1);
-        quotedSearchPath.add(sourceDir);
-        quotedSearchPath.addAll(includePaths);
-        return quotedSearchPath;
-    }
-
-    public File quotedSearchIncludeRoots(String include, File sourceFile) {
-        List<File> quotedSearchPath = prependSourceDir(sourceFile, includePaths);
-        BuildableResult result = new BuildableResult();
-        searchForDependency(quotedSearchPath, include, result, true);
-        return result.files.isEmpty() ? null : result.files.iterator().next().getFile();
-    }
-
-    public File systemSearchIncludeRoots(String include) {
-        BuildableResult result = new BuildableResult();
-        searchForDependency(includePaths, include, result, false);
-        return result.files.isEmpty() ? null : result.files.iterator().next().getFile();
-    }
-
-    private void searchForDependency(List<File> searchPath, String include, BuildableResult dependencies, boolean quoted) {
-        for (File searchDir : searchPath) {
-            Map<String, IncludeFileImpl> searchedIncludes = includeRoots.get(searchDir);
-            if (searchedIncludes == null) {
-                searchedIncludes = new HashMap<String, IncludeFileImpl>();
-                includeRoots.put(searchDir, searchedIncludes);
-            }
-            if (searchedIncludes.containsKey(include)) {
-                IncludeFileImpl includeFile = searchedIncludes.get(include);
-                if (includeFile.snapshot.getType() == FileType.RegularFile) {
-                    dependencies.resolved(includeFile);
-                    return;
-                }
-                continue;
-            }
-
-            File candidate = new File(searchDir, include);
-            FileSnapshot fileSnapshot = fileSystemSnapshotter.snapshotSelf(candidate);
-            IncludeFileImpl includeFile = fileSnapshot.getType() == FileType.RegularFile ? new IncludeFileImpl(candidate, fileSnapshot, include, quoted) : new IncludeFileImpl(null, fileSnapshot, include, quoted);
-            searchedIncludes.put(include, includeFile);
-
-            if (fileSnapshot.getType() == FileType.RegularFile) {
-                dependencies.resolved(includeFile);
-                return;
-            }
-        }
-    }
-
-    private static class IncludeFileImpl implements IncludeFile {
-        final File file;
-        final FileSnapshot snapshot;
-        private final String include;
-        private final boolean quotedInclude;
-
-        IncludeFileImpl(File file, FileSnapshot snapshot, String include, boolean quotedInclude) {
-            this.file = file;
-            this.snapshot = snapshot;
-            this.include = include;
-            this.quotedInclude = quotedInclude;
-        }
-
-        @Override
-        public File getFile() {
-            return file;
-        }
-
-        @Override
-        public FileSnapshot getSnapshot() {
-            return snapshot;
-        }
-
-        @Override
-        public String getInclude() {
-            return include;
-        }
-
-        @Override
-        public boolean isQuotedInclude() {
-            return quotedInclude;
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            if (obj == this) {
-                return true;
-            }
-            if (obj == null || getClass() != obj.getClass()) {
-                return false;
-            }
-            IncludeFileImpl other = (IncludeFileImpl) obj;
-            return Objects.equal(file, other.file) && snapshot.equals(other.snapshot);
-        }
-
-        @Override
-        public int hashCode() {
-            return snapshot.hashCode();
-        }
-    }
-
     private interface ExpressionVisitor {
         /**
          * Called when an expression is about to be visited. Called for each intermediate expression as macros are expanded.
@@ -383,11 +269,12 @@ public class DefaultSourceIncludesResolver implements SourceIncludesResolver {
         void visitUnresolved();
     }
 
-    private static class BuildableResult implements IncludeResolutionResult {
+    private static class BuildableResult implements IncludeResolutionResult, DefaultSourceIncludesSearchPath.SearchResult {
         private final Set<IncludeFile> files = new LinkedHashSet<IncludeFile>();
         private boolean missing;
 
-        void resolved(IncludeFile includeFile) {
+        @Override
+        public void resolved(IncludeFile includeFile) {
             files.add(includeFile);
         }
 
@@ -471,8 +358,7 @@ public class DefaultSourceIncludesResolver implements SourceIncludesResolver {
             if (!quoted.add(path)) {
                 return;
             }
-            List<File> quotedSearchPath = prependSourceDir(sourceFile, includePaths);
-            searchForDependency(quotedSearchPath, path, results, true);
+            searchPath.asQuotedSearchPath(sourceFile).searchForDependency(path, results);
         }
 
         @Override
@@ -481,7 +367,7 @@ public class DefaultSourceIncludesResolver implements SourceIncludesResolver {
             if (!system.add(path)) {
                 return;
             }
-            searchForDependency(includePaths, path, results, false);
+            searchPath.searchForDependency(path, results);
         }
 
         @Override

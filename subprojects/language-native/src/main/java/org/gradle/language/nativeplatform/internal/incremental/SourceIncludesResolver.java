@@ -44,7 +44,4 @@ public interface SourceIncludesResolver {
      * Resolves the given include directive to zero or more include files.
      */
     IncludeResolutionResult resolveInclude(File sourceFile, Include include, MacroLookup visibleMacros);
-
-    File quotedSearchIncludeRoots(String include, File sourceFile);
-    File systemSearchIncludeRoots(String include);
 }
