@@ -120,7 +120,7 @@ public class IncrementalCompileFilesFactory {
             if (fileDetails == null) {
                 Collection<FileVisitResult> fileDetailsCollection = sourceProcessorCache.get(file);
                 for (FileVisitResult candidate : fileDetailsCollection) {
-                    if (candidate.canReuse(new ResolutionContextImpl(searchPath))) {
+                    if (candidate.canReuse(new ResolutionContext(searchPath))) {
                         fileDetails = new FileDetails(null, null);
                         fileDetails.results = candidate;
                         visitedFiles.put(file, fileDetails);
@@ -197,39 +197,6 @@ public class IncrementalCompileFilesFactory {
         }
     }
 
-    private static class ResolutionContextImpl implements ResolutionContext {
-        private final SourceIncludesSearchPath searchPath;
-        Set<File> visited = new HashSet<File>();
-
-        ResolutionContextImpl(SourceIncludesSearchPath searchPath) {
-            this.searchPath = searchPath;
-        }
-
-        @Override
-        public boolean canVisit(File file) {
-            return visited.add(file);
-        }
-
-        @Override
-        public boolean checkResolution(File sourceFile, SourceIncludesResolver.IncludeResolutionResult incFile) {
-            SourceIncludesSearchPath quotedSearchPath = searchPath.asQuotedSearchPath(sourceFile);
-
-            for (IncludeFile includeFile : incFile.getFiles()) {
-                IncludeFile foundFile;
-                if (includeFile.getIncludedType() == IncludeFile.IncludedType.QUOTED) {
-                    foundFile = quotedSearchPath.searchForDependency(includeFile.getInclude());
-                } else {
-                    foundFile = searchPath.searchForDependency(includeFile.getInclude());
-                }
-
-                if (foundFile == null || !includeFile.getFile().equals(foundFile.getFile())) {
-                    return false;
-                }
-            }
-            return true;
-        }
-    }
-
     private enum IncludeFileResolutionResult {
         NoMacroIncludes,
         HasMacroIncludes, // but all resolved ok
@@ -252,25 +219,61 @@ public class IncrementalCompileFilesFactory {
         }
     }
 
-    interface ResolutionContext {
+    /**
+     * Context used when verifying the file visit result for reuse.
+     */
+    private static class ResolutionContext {
+        private final SourceIncludesSearchPath searchPath;
+        Set<File> visited = new HashSet<File>();
 
-        boolean canVisit(File file);
+        ResolutionContext(SourceIncludesSearchPath searchPath) {
+            this.searchPath = searchPath;
+        }
 
-        boolean checkResolution(File sourceFile, SourceIncludesResolver.IncludeResolutionResult incFile);
-    }
+        /**
+         * Returns {@code true} if the specified file haven't been check or {@code false} otherwise.
+         */
+        public boolean canVisit(File file) {
+            return visited.add(file);
+        }
 
-    public interface FileVisitResult extends CollectingMacroLookup.MacroSource {
-        void collectDependencies(CollectingMacroLookup directives);
+        /**
+         * Return {@code true} if the file match the previous resolution result or {@code false} otherwise.
+         */
+        public boolean checkResolution(File sourceFile, SourceIncludesResolver.IncludeResolutionResult incFile) {
+            SourceIncludesSearchPath quotedSearchPath = searchPath.asQuotedSearchPath(sourceFile);
 
-        void collectFilesInto(Set<IncludeFileState> files);
-        boolean canReuse(ResolutionContext resolutionContext);
-        IncludeFileResolutionResult getResult();
-        IncludeDirectives getIncludeDirectives();
+            for (IncludeFile includeFile : incFile.getFiles()) {
+                IncludeFile foundFile;
+                if (includeFile.getIncludedType() == IncludeFile.IncludedType.QUOTED) {
+                    foundFile = quotedSearchPath.searchForDependency(includeFile.getInclude());
+                } else {
+                    foundFile = searchPath.searchForDependency(includeFile.getInclude());
+                }
+
+                if (foundFile == null || !includeFile.getFile().equals(foundFile.getFile())) {
+                    return false;
+                }
+            }
+            return true;
+        }
     }
 
     /**
      * Details of a file included in a specific location in the file include graph.
      */
+    public interface FileVisitResult extends CollectingMacroLookup.MacroSource {
+        void collectDependencies(CollectingMacroLookup directives);
+        void collectFilesInto(Set<IncludeFileState> files);
+        IncludeFileResolutionResult getResult();
+        IncludeDirectives getIncludeDirectives();
+
+        /**
+         * Verify if this file visit result can be reuse in the specified resolution context.
+         */
+        boolean canReuse(ResolutionContext resolutionContext);
+    }
+
     private static class FileVisitResultImpl implements FileVisitResult {
         private final File file;
         private final IncludeFileResolutionResult result;
