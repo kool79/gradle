@@ -24,18 +24,18 @@ import java.io.File;
 import java.util.Collection;
 
 public class IncrementalCompileSourceProcessorCache {
-    private final ListMultimap<File, IncrementalCompileFilesFactory.FileDetails> cache;
+    private final ListMultimap<File, IncrementalCompileFilesFactory.FileVisitResult> cache;
 
     public IncrementalCompileSourceProcessorCache() {
-        ListMultimap<File, IncrementalCompileFilesFactory.FileDetails> c = MultimapBuilder.ListMultimapBuilder.hashKeys().arrayListValues().build();
+        ListMultimap<File, IncrementalCompileFilesFactory.FileVisitResult> c = MultimapBuilder.ListMultimapBuilder.hashKeys().arrayListValues().build();
         cache = Multimaps.synchronizedListMultimap(c);
     }
 
-    public Collection<IncrementalCompileFilesFactory.FileDetails> get(File file) {
+    public Collection<IncrementalCompileFilesFactory.FileVisitResult> get(File file) {
         return cache.get(file);
     }
 
-    public void put(File file, IncrementalCompileFilesFactory.FileDetails fileDetails) {
-        cache.put(file, fileDetails);
+    public void put(File file, IncrementalCompileFilesFactory.FileVisitResult fileVisitResult) {
+        cache.put(file, fileVisitResult);
     }
 }
