@@ -357,7 +357,7 @@ public class DefaultSourceIncludesResolver implements SourceIncludesResolver {
             if (!quoted.add(path)) {
                 return;
             }
-            IncludeFile includeFile = searchPath.asQuotedSearchPath(sourceFile).searchForDependency(path);
+            IncludeFile includeFile = searchPath.searchForDependency(path, sourceFile);
             if (includeFile != null) {
                 results.resolved(includeFile);
             }

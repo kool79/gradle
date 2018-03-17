@@ -20,8 +20,11 @@ import javax.annotation.Nullable;
 import java.io.File;
 
 public interface SourceIncludesSearchPath {
-    SourceIncludesSearchPath asQuotedSearchPath(File sourceFile);
+//    SourceIncludesSearchPath asQuotedSearchPath(File sourceFile);
 
     @Nullable
     IncludeFile searchForDependency(String include);
+
+    @Nullable
+    IncludeFile searchForDependency(String include, File sourceFile);
 }

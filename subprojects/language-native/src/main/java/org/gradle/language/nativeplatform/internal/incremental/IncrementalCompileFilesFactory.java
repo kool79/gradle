@@ -241,17 +241,16 @@ public class IncrementalCompileFilesFactory {
          * Return {@code true} if the file match the previous resolution result or {@code false} otherwise.
          */
         public boolean checkResolution(File sourceFile, SourceIncludesResolver.IncludeResolutionResult incFile) {
-            SourceIncludesSearchPath quotedSearchPath = searchPath.asQuotedSearchPath(sourceFile);
-
             for (IncludeFile includeFile : incFile.getFiles()) {
                 IncludeFile foundFile;
                 if (includeFile.getIncludedType() == IncludeFile.IncludedType.QUOTED) {
-                    foundFile = quotedSearchPath.searchForDependency(includeFile.getInclude());
+//                    SourceIncludesSearchPath quotedSearchPath = searchPath.asQuotedSearchPath(sourceFile);
+                    foundFile = searchPath.searchForDependency(includeFile.getInclude(), sourceFile);
                 } else {
                     foundFile = searchPath.searchForDependency(includeFile.getInclude());
                 }
 
-                if (foundFile == null || !includeFile.getFile().equals(foundFile.getFile())) {
+                if (!includeFile.equals(foundFile)) {
                     return false;
                 }
             }
@@ -305,7 +304,7 @@ public class IncrementalCompileFilesFactory {
 
         @Override
         public boolean canReuse(ResolutionContext resolutionContext) {
-            if (!resolutionContext.canVisit(file)) {
+            if (resolutionContext.canVisit(file)) {
                 for (SourceIncludesResolver.IncludeResolutionResult resolutionResult : includeFiles) {
                     if (!resolutionContext.checkResolution(file, resolutionResult)) {
                         return false;

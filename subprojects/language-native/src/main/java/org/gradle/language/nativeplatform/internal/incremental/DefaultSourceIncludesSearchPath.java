@@ -39,21 +39,21 @@ public class DefaultSourceIncludesSearchPath implements SourceIncludesSearchPath
         this.includeRoots = new HashMap<File, Map<String, IncludeFileImpl>>();
     }
 
-    @Override
-    public SourceIncludesSearchPath asQuotedSearchPath(File sourceFile) {
-        final List<File> includePaths = prependSourceDir(sourceFile, this.includePaths);
-        return new SourceIncludesSearchPath() {
-            @Override
-            public SourceIncludesSearchPath asQuotedSearchPath(File sourceFile) {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public IncludeFile searchForDependency(String include) {
-                return DefaultSourceIncludesSearchPath.this.searchForDependency(includePaths, include, IncludeFile.IncludedType.QUOTED);
-            }
-        };
-    }
+//    @Override
+//    public SourceIncludesSearchPath asQuotedSearchPath(File sourceFile) {
+//        final List<File> includePaths = prependSourceDir(sourceFile, this.includePaths);
+//        return new SourceIncludesSearchPath() {
+//            @Override
+//            public SourceIncludesSearchPath asQuotedSearchPath(File sourceFile) {
+//                throw new UnsupportedOperationException();
+//            }
+//
+//            @Override
+//            public IncludeFile searchForDependency(String include) {
+//                return DefaultSourceIncludesSearchPath.this.searchForDependency(includePaths, include, IncludeFile.IncludedType.QUOTED);
+//            }
+//        };
+//    }
 
     private List<File> prependSourceDir(File sourceFile, List<File> includePaths) {
         File sourceDir = sourceFile.getParentFile();
@@ -71,6 +71,12 @@ public class DefaultSourceIncludesSearchPath implements SourceIncludesSearchPath
     @Nullable
     public IncludeFile searchForDependency(String include) {
         return searchForDependency(includePaths, include, IncludeFile.IncludedType.SYSTEM);
+    }
+
+    @Nullable
+    @Override
+    public IncludeFile searchForDependency(String include, File sourceFile) {
+        return searchForDependency(prependSourceDir(sourceFile, includePaths), include, IncludeFile.IncludedType.QUOTED);
     }
 
     @Nullable

@@ -16,6 +16,7 @@
 
 package org.gradle.language.nativeplatform.internal.incremental;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.Multimaps;
@@ -32,7 +33,7 @@ public class DefaultIncrementalCompileSourceProcessorCache implements Incrementa
     }
 
     public Collection<IncrementalCompileFilesFactory.FileVisitResult> get(File file) {
-        return cache.get(file);
+        return ImmutableList.copyOf(cache.get(file));
     }
 
     public void put(File file, IncrementalCompileFilesFactory.FileVisitResult fileVisitResult) {
