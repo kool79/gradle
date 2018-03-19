@@ -16,12 +16,15 @@
 
 package org.gradle.integtests
 
+import org.gradle.integtests.fixtures.executer.ExecutionFailure
+
 class WrapperLoggingIntegrationTest extends AbstractWrapperIntegrationSpec {
+    def setup() {
+        file("build.gradle") << "task emptyTask"
+    }
+
     def "wrapper does not output anything when executed in quiet mode"() {
         given:
-        file("build.gradle") << """
-task emptyTask
-        """
         prepareWrapper()
 
         when:
@@ -30,5 +33,40 @@ task emptyTask
 
         then:
         result.output.empty
+    }
+
+    def "wrapper logs when there is a problem setting permissions"() {
+        given: "malformed distribution"
+        // Repackage distribution with bin/gradle removed so permissions cannot be set
+        def tempUnzipDir = temporaryFolder.createDir("temp-unzip")
+        distribution.binDistribution.unzipTo(tempUnzipDir)
+        distribution.binDistribution.delete()
+        assert tempUnzipDir.file("gradle-${distribution.version.version}", "bin", "gradle").delete()
+        tempUnzipDir.zipTo(distribution.binDistribution)
+        prepareWrapper(distribution.binDistribution.toURI())
+
+        when:
+        def failure = wrapperExecuter
+            .withTasks("emptyTask")
+            .withStackTraceChecksDisabled()
+            .run()
+
+        then:
+        failure.output.contains("Could not set executable permissions")
+    }
+
+    def "wrapper logs when unzipping distribution fails"() {
+        given: "Empty zip file"
+        prepareWrapper(distribution.binDistribution.toURI())
+        distribution.binDistribution.text = ""
+
+        when:
+        ExecutionFailure failure = wrapperExecuter
+            .withTasks("emptyTask")
+            .withStackTraceChecksDisabled()
+            .runWithFailure()
+
+        then:
+        failure.output.contains("Could not unzip")
     }
 }

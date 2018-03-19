@@ -165,9 +165,7 @@ public class Install {
         try {
             ProcessBuilder pb = new ProcessBuilder("chmod", "755", gradleCommand.getCanonicalPath());
             Process p = pb.start();
-            if (p.waitFor() == 0) {
-                logger.log("Set executable permissions for: " + gradleCommand.getAbsolutePath());
-            } else {
+            if (p.waitFor() != 0) {
                 BufferedReader is = new BufferedReader(new InputStreamReader(p.getInputStream()));
                 Formatter stdout = new Formatter();
                 String line;
@@ -210,30 +208,34 @@ public class Install {
         return dir.delete();
     }
 
-    private void unzip(File zip, File dest) throws IOException {
-        Enumeration entries;
-        ZipFile zipFile = new ZipFile(zip);
-
+    private void unzip(File zip, File dest) {
         try {
-            entries = zipFile.entries();
+            Enumeration entries;
+            ZipFile zipFile = new ZipFile(zip);
+            try {
+                entries = zipFile.entries();
 
-            while (entries.hasMoreElements()) {
-                ZipEntry entry = (ZipEntry) entries.nextElement();
+                while (entries.hasMoreElements()) {
+                    ZipEntry entry = (ZipEntry) entries.nextElement();
 
-                if (entry.isDirectory()) {
-                    (new File(dest, entry.getName())).mkdirs();
-                    continue;
+                    if (entry.isDirectory()) {
+                        (new File(dest, entry.getName())).mkdirs();
+                        continue;
+                    }
+
+                    OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(new File(dest, entry.getName())));
+                    try {
+                        copyInputStream(zipFile.getInputStream(entry), outputStream);
+                    } finally {
+                        outputStream.close();
+                    }
                 }
-
-                OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(new File(dest, entry.getName())));
-                try {
-                    copyInputStream(zipFile.getInputStream(entry), outputStream);
-                } finally {
-                    outputStream.close();
-                }
+            } finally {
+                zipFile.close();
             }
-        } finally {
-            zipFile.close();
+        } catch (IOException e) {
+            logger.log("Could not unzip " + zip.getAbsolutePath() + " to " + dest.getAbsolutePath() + ".");
+            logger.log("Reason: " + e.getMessage());
         }
     }
 
