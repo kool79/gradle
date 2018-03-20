@@ -42,10 +42,7 @@ open class JsoupCopyExtension(private val task: Copy) {
     fun plugins(vararg plugins: Any) =
         project.files(plugins).forEach {
             inputs.file(it)
-            project.apply {
-                from(it)
-                to(this@JsoupCopyExtension)
-            }
+            project.apply(from = it, to = this@JsoupCopyExtension)
         }
 
     fun transform(action: Action<JsoupTransformTarget>) =
