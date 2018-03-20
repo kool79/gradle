@@ -150,7 +150,7 @@ public class DefaultSourceIncludesSearchPath implements SourceIncludesSearchPath
                 return false;
             }
             IncludeFileImpl other = (IncludeFileImpl) obj;
-            return Objects.equal(file, other.file) && snapshot.equals(other.snapshot);
+            return Objects.equal(file, other.file) && snapshot.getContent().equals(other.snapshot.getContent());
         }
 
         @Override
