@@ -22,7 +22,6 @@ import org.gradle.performance.fixture.BuildExperimentInvocationInfo
 import org.gradle.performance.fixture.BuildExperimentListener
 import org.gradle.performance.fixture.BuildExperimentListenerAdapter
 import org.gradle.performance.fixture.BuildExperimentRunner
-import org.gradle.performance.fixture.LogFiles
 import org.gradle.performance.measure.MeasuredOperation
 import spock.lang.Ignore
 import spock.lang.Unroll

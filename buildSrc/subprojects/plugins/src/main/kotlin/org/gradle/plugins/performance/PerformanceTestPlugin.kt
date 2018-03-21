@@ -30,7 +30,6 @@ object PropertyNames {
     const val dbUsername = "org.gradle.performance.db.username"
     const val dbPassword = "org.gradle.performance.db.password"
 
-    const val useYourkit = "org.gradle.performance.use_yourkit"
     const val flameGraphTargetDir = "org.gradle.performance.flameGraphTargetDir"
 
     const val workerTestTaskName = "org.gradle.performance.workerTestTaskName"
@@ -336,11 +335,6 @@ class PerformanceTestPlugin : Plugin<Project> {
 
             configureForAnyPerformanceTestTask(this, performanceSourceSet, prepareSamplesTask, performanceReportTask)
 
-            if (project.hasProperty(PropertyNames.useYourkit)) {
-                testLogging.showStandardStreams = true
-                systemProperties[PropertyNames.useYourkit] = "1"
-                outputs.upToDateWhen { false }
-            }
             if (project.hasProperty(PropertyNames.performanceTestVerbose)) {
                 testLogging.showStandardStreams = true
             }

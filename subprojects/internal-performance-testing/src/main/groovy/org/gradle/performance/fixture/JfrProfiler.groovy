@@ -23,7 +23,7 @@ import org.gradle.performance.measure.MeasuredOperation
 
 @CompileStatic
 @Log
-class JfrProfiler implements DataCollector {
+class JfrProfiler implements Profiler {
     private static final String TARGET_DIR_KEY = "org.gradle.performance.flameGraphTargetDir"
 
     final boolean enabled

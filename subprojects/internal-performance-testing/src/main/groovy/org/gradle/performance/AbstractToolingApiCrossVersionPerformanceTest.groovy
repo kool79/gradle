@@ -45,6 +45,7 @@ import org.gradle.performance.fixture.PerformanceTestGradleDistribution
 import org.gradle.performance.fixture.PerformanceTestIdProvider
 import org.gradle.performance.fixture.PerformanceTestJvmOptions
 import org.gradle.performance.fixture.PerformanceTestRetryRule
+import org.gradle.performance.fixture.Profiler
 import org.gradle.performance.fixture.TestProjectLocator
 import org.gradle.performance.fixture.TestScenarioSelector
 import org.gradle.performance.results.BuildDisplayInfo
@@ -245,7 +246,7 @@ abstract class AbstractToolingApiCrossVersionPerformanceTest extends Specificati
             experimentSpec.with {
                 def count = iterationCount("runs", invocationCount)
                 count.times { n ->
-                    BuildExperimentInvocationInfo info = new DefaultBuildExperimentInvocationInfo(experimentSpec, workingDir , BuildExperimentRunner.Phase.MEASUREMENT, n+1, count, null)
+                    BuildExperimentInvocationInfo info = new DefaultBuildExperimentInvocationInfo(experimentSpec, workingDir , BuildExperimentRunner.Phase.MEASUREMENT, n+1, count, Profiler.NoOpProfiler.INSTANCE)
                     if (experimentSpec.listener) {
                         experimentSpec.listener.beforeInvocation(info)
                     }
@@ -276,7 +277,7 @@ abstract class AbstractToolingApiCrossVersionPerformanceTest extends Specificati
             experimentSpec.with {
                 def count = iterationCount("warmups", warmUpCount)
                 count.times { n ->
-                    BuildExperimentInvocationInfo info = new DefaultBuildExperimentInvocationInfo(experimentSpec, workingDir , BuildExperimentRunner.Phase.WARMUP, n+1, count, null)
+                    BuildExperimentInvocationInfo info = new DefaultBuildExperimentInvocationInfo(experimentSpec, workingDir , BuildExperimentRunner.Phase.WARMUP, n+1, count, Profiler.NoOpProfiler.INSTANCE)
                     if (experimentSpec.listener) {
                         experimentSpec.listener.beforeInvocation(info)
                     }

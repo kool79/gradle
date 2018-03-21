@@ -33,5 +33,5 @@ public interface BuildExperimentInvocationInfo {
 
     File getBuildLog();
 
-    JfrProfiler getProfiler();
+    Profiler getProfiler();
 }

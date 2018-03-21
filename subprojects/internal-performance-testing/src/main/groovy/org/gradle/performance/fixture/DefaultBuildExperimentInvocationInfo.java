@@ -23,9 +23,9 @@ public class DefaultBuildExperimentInvocationInfo implements BuildExperimentInvo
     private final BuildExperimentRunner.Phase phase;
     private final int iterationNumber;
     private final int iterationMax;
-    private final JfrProfiler profiler;
+    private final Profiler profiler;
 
-    public DefaultBuildExperimentInvocationInfo(BuildExperimentSpec experiment, File projectDir, BuildExperimentRunner.Phase phase, int iterationNumber, int iterationMax, JfrProfiler profiler) {
+    public DefaultBuildExperimentInvocationInfo(BuildExperimentSpec experiment, File projectDir, BuildExperimentRunner.Phase phase, int iterationNumber, int iterationMax, Profiler profiler) {
         this.experiment = experiment;
         this.projectDir = projectDir;
         this.phase = phase;
@@ -70,7 +70,7 @@ public class DefaultBuildExperimentInvocationInfo implements BuildExperimentInvo
     }
 
     @Override
-    public JfrProfiler getProfiler() {
+    public Profiler getProfiler() {
         return profiler;
     }
 }

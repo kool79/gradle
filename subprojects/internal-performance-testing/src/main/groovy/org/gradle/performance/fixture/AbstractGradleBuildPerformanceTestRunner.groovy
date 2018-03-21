@@ -125,7 +125,4 @@ abstract class AbstractGradleBuildPerformanceTestRunner<R extends PerformanceTes
         ResultsStoreHelper.determineChannel()
     }
 
-    JfrProfiler getHonestProfiler() {
-        return experimentRunner.profiler
-    }
 }

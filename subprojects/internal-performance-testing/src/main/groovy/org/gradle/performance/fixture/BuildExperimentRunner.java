@@ -52,7 +52,7 @@ public class BuildExperimentRunner {
         dataCollector = new CompositeDataCollector(profiler);
     }
 
-    public JfrProfiler getProfiler() {
+    public Profiler getProfiler() {
         return profiler;
     }
 
