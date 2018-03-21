@@ -245,7 +245,7 @@ abstract class AbstractToolingApiCrossVersionPerformanceTest extends Specificati
             experimentSpec.with {
                 def count = iterationCount("runs", invocationCount)
                 count.times { n ->
-                    BuildExperimentInvocationInfo info = new DefaultBuildExperimentInvocationInfo(experimentSpec, workingDir , BuildExperimentRunner.Phase.MEASUREMENT, n+1, count)
+                    BuildExperimentInvocationInfo info = new DefaultBuildExperimentInvocationInfo(experimentSpec, workingDir , BuildExperimentRunner.Phase.MEASUREMENT, n+1, count, null)
                     if (experimentSpec.listener) {
                         experimentSpec.listener.beforeInvocation(info)
                     }
@@ -276,7 +276,7 @@ abstract class AbstractToolingApiCrossVersionPerformanceTest extends Specificati
             experimentSpec.with {
                 def count = iterationCount("warmups", warmUpCount)
                 count.times { n ->
-                    BuildExperimentInvocationInfo info = new DefaultBuildExperimentInvocationInfo(experimentSpec, workingDir , BuildExperimentRunner.Phase.WARMUP, n+1, count)
+                    BuildExperimentInvocationInfo info = new DefaultBuildExperimentInvocationInfo(experimentSpec, workingDir , BuildExperimentRunner.Phase.WARMUP, n+1, count, null)
                     if (experimentSpec.listener) {
                         experimentSpec.listener.beforeInvocation(info)
                     }

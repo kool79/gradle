@@ -114,8 +114,8 @@ abstract class AbstractGradleBuildPerformanceTestRunner<R extends PerformanceTes
         specs.each {
             def operations = operations(results, it)
             def invocation = it.invocation
-            if (experimentRunner.honestProfiler && invocation instanceof GradleInvocationSpec) {
-                experimentRunner.honestProfiler.sessionId = "${testId}-${it.projectName}-${invocation.gradleDistribution.version.version}".replaceAll('[^a-zA-Z0-9.-]', '_').replaceAll('[_]+', '_')
+            if (experimentRunner.profiler && invocation instanceof GradleInvocationSpec) {
+                experimentRunner.profiler.sessionId = "${testId}-${it.projectName}-${invocation.gradleDistribution.version.version}".replaceAll('[^a-zA-Z0-9.-]', '_').replaceAll('[_]+', '_')
             }
             experimentRunner.run(it, operations)
         }
@@ -125,7 +125,7 @@ abstract class AbstractGradleBuildPerformanceTestRunner<R extends PerformanceTes
         ResultsStoreHelper.determineChannel()
     }
 
-    HonestProfilerCollector getHonestProfiler() {
-        return experimentRunner.honestProfiler
+    JfrProfiler getHonestProfiler() {
+        return experimentRunner.profiler
     }
 }

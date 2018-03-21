@@ -35,7 +35,7 @@ public class BuildExperimentRunner {
 
     private final DataCollector dataCollector;
     private final GradleSessionProvider executerProvider;
-    private final HonestProfilerCollector honestProfiler;
+    private final JfrProfiler profiler;
 
     public enum Phase {
         WARMUP,
@@ -48,12 +48,12 @@ public class BuildExperimentRunner {
 
     public BuildExperimentRunner(GradleSessionProvider executerProvider) {
         this.executerProvider = executerProvider;
-        honestProfiler = new HonestProfilerCollector();
-        dataCollector = new CompositeDataCollector(honestProfiler);
+        profiler = new JfrProfiler();
+        dataCollector = new CompositeDataCollector(profiler);
     }
 
-    public HonestProfilerCollector getHonestProfiler() {
-        return honestProfiler;
+    public JfrProfiler getProfiler() {
+        return profiler;
     }
 
     public void run(BuildExperimentSpec experiment, MeasuredOperationList results) {
@@ -72,7 +72,7 @@ public class BuildExperimentRunner {
 
         if (invocationSpec instanceof GradleInvocationSpec) {
             GradleInvocationSpec invocation = (GradleInvocationSpec) invocationSpec;
-            honestProfiler.setInitiallyStopped(invocation.getUseDaemon());
+            profiler.setUsesDaemon(invocation.getUseDaemon());
             final List<String> additionalJvmOpts = dataCollector.getAdditionalJvmOpts(workingDirectory);
             final List<String> additionalArgs = new ArrayList<String>(dataCollector.getAdditionalArgs(workingDirectory));
             additionalArgs.add("-PbuildExperimentDisplayName=" + experiment.getDisplayName());
@@ -105,7 +105,7 @@ public class BuildExperimentRunner {
         for (int i = 0; i < invocationCount; i++) {
             System.out.println();
             System.out.println(String.format("Test run #%s", i + 1));
-            BuildExperimentInvocationInfo info = new DefaultBuildExperimentInvocationInfo(experiment, projectDir, Phase.MEASUREMENT, i + 1, invocationCount);
+            BuildExperimentInvocationInfo info = new DefaultBuildExperimentInvocationInfo(experiment, projectDir, Phase.MEASUREMENT, i + 1, invocationCount, profiler);
             runOnce(session, results, info);
         }
     }
@@ -134,7 +134,7 @@ public class BuildExperimentRunner {
         for (int i = 0; i < warmUpCount; i++) {
             System.out.println();
             System.out.println(String.format("Warm-up #%s", i + 1));
-            BuildExperimentInvocationInfo info = new DefaultBuildExperimentInvocationInfo(experiment, projectDir, Phase.WARMUP, i + 1, warmUpCount);
+            BuildExperimentInvocationInfo info = new DefaultBuildExperimentInvocationInfo(experiment, projectDir, Phase.WARMUP, i + 1, warmUpCount, profiler);
             runOnce(session, new MeasuredOperationList(), info);
         }
     }
@@ -187,28 +187,21 @@ public class BuildExperimentRunner {
             final InvocationExecutorProvider session,
         final MeasuredOperationList results,
         final BuildExperimentInvocationInfo invocationInfo) {
-        BuildExperimentSpec experiment = invocationInfo.getBuildExperimentSpec();
-        final Action<MeasuredOperation> runner = session.runner(invocationInfo, wrapInvocationCustomizer(invocationInfo, createInvocationCustomizer(invocationInfo)));
+        final AtomicBoolean omitMeasurement = new AtomicBoolean();
+        final BuildExperimentListener.MeasurementCallback measurementCallback = new BuildExperimentListener.MeasurementCallback() {
+            @Override
+            public void omitMeasurement() {
+                omitMeasurement.set(true);
+            }
+        };
+        final Action<MeasuredOperation> runner = session.runner(invocationInfo, wrapInvocationCustomizer(invocationInfo, createInvocationCustomizer(invocationInfo)), measurementCallback);
 
-        if (experiment.getListener() != null) {
-            experiment.getListener().beforeInvocation(invocationInfo);
-        }
 
         MeasuredOperation operation = new MeasuredOperation();
         try {
             runner.execute(operation);
         } catch (Exception e) {
             operation.setException(e);
-        }
-
-        final AtomicBoolean omitMeasurement = new AtomicBoolean();
-        if (experiment.getListener() != null) {
-            experiment.getListener().afterInvocation(invocationInfo, operation, new BuildExperimentListener.MeasurementCallback() {
-                @Override
-                public void omitMeasurement() {
-                    omitMeasurement.set(true);
-                }
-            });
         }
 
         if (!omitMeasurement.get()) {

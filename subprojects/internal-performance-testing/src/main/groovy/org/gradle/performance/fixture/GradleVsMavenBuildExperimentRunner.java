@@ -55,7 +55,7 @@ public class GradleVsMavenBuildExperimentRunner extends BuildExperimentRunner {
     private void runMavenExperiment(MeasuredOperationList results, final MavenBuildExperimentSpec experiment, final MavenInvocationSpec buildSpec) {
         File projectDir = buildSpec.getWorkingDirectory();
         performMeasurements(new InvocationExecutorProvider() {
-            public Action<MeasuredOperation> runner(final BuildExperimentInvocationInfo invocationInfo, final InvocationCustomizer invocationCustomizer) {
+            public Action<MeasuredOperation> runner(final BuildExperimentInvocationInfo invocationInfo, final InvocationCustomizer invocationCustomizer, final BuildExperimentListener.MeasurementCallback measurementCallback) {
                 return new Action<MeasuredOperation>() {
                     @Override
                     public void execute(MeasuredOperation measuredOperation) {
@@ -70,12 +70,22 @@ public class GradleVsMavenBuildExperimentRunner extends BuildExperimentRunner {
                         MavenInvocationSpec invocation = invocationCustomizer.customize(invocationInfo, buildSpec);
                         final ExecAction run = createMavenInvocation(invocation, invocation.getTasksToRun());
                         System.out.println("Measuring Maven tasks: " + Joiner.on(" ").join(buildSpec.getTasksToRun()));
+
+                        BuildExperimentListener listener = experiment.getListener();
+                        if (listener != null) {
+                            listener.beforeInvocation(invocationInfo);
+                        }
                         DurationMeasurementImpl.measure(measuredOperation, new Runnable() {
                             @Override
                             public void run() {
                                 executeWithFileLogging(experiment, run);
                             }
                         });
+                        if (listener != null) {
+                            listener.afterInvocation(invocationInfo, measuredOperation, measurementCallback);
+                        }
+
+
                     }
                 };
             }

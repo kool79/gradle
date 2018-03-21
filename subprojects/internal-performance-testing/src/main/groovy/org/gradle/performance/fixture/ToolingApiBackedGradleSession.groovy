@@ -20,6 +20,7 @@ import com.google.common.base.Joiner
 import groovy.transform.CompileStatic
 import org.gradle.api.Action
 import org.gradle.integtests.fixtures.executer.IntegrationTestBuildContext
+import org.gradle.performance.fixture.BuildExperimentListener.MeasurementCallback
 import org.gradle.performance.measure.MeasuredOperation
 import org.gradle.tooling.BuildLauncher
 import org.gradle.tooling.GradleConnector
@@ -54,7 +55,7 @@ class ToolingApiBackedGradleSession implements GradleSession {
 
 
     @Override
-    Action<MeasuredOperation> runner(final BuildExperimentInvocationInfo invocationInfo, InvocationCustomizer invocationCustomizer) {
+    Action<MeasuredOperation> runner(final BuildExperimentInvocationInfo invocationInfo, InvocationCustomizer invocationCustomizer, MeasurementCallback measurementCallback) {
         def invocation = invocationCustomizer ? invocationCustomizer.customize(invocationInfo, this.invocation) : this.invocation
         BuildLauncher cleanLauncher
         def cleanTasks = invocation.cleanTasks
@@ -68,17 +69,30 @@ class ToolingApiBackedGradleSession implements GradleSession {
         BuildLauncher buildLauncher = configureLauncher(invocation, tasksToRun)
 
         return { MeasuredOperation measuredOperation ->
+            invocationInfo.profiler.stop()
             if (cleanLauncher != null) {
                 System.out.println("Cleaning up by running Gradle tasks: " + Joiner.on(" ").join(cleanTasks));
                 cleanLauncher.run()
             }
             System.out.println("Measuring Gradle tasks: " + Joiner.on(" ").join(tasksToRun));
+
+            if (invocationInfo.phase == BuildExperimentRunner.Phase.MEASUREMENT) {
+                invocationInfo.profiler.start()
+            }
+            def experiment = invocationInfo.buildExperimentSpec
+            def listener = experiment.getListener()
+            if (listener != null) {
+                listener.beforeInvocation(invocationInfo);
+            }
             DurationMeasurementImpl.measure(measuredOperation, new Runnable() {
                 @Override
                 void run() {
                     buildLauncher.run()
                 }
             })
+            if (listener != null) {
+                listener.afterInvocation(invocationInfo, measuredOperation, measurementCallback);
+            }
         } as Action<MeasuredOperation>
     }
 

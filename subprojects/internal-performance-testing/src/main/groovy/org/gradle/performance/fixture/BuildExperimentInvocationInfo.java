@@ -32,4 +32,6 @@ public interface BuildExperimentInvocationInfo {
     File getGradleUserHome();
 
     File getBuildLog();
+
+    JfrProfiler getProfiler();
 }
